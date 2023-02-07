@@ -16,15 +16,15 @@ export class Transaction {
 
   @Column()
   @Field()
-  accountExternalIdDebit: string;
+  accountExternalIdDebit?: string;
 
   @Column()
   @Field()
-  accountExternalIdCredit: string;
+  accountExternalIdCredit?: string;
 
   @Column()
   @Field()
-  tranferTypeId: number;
+  tranferTypeId?: number;
 
   @Column()
   @Field()

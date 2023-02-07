@@ -5,26 +5,28 @@ import { Repository } from 'typeorm';
 import { Transaction } from '../entities/transaction.entity';
 import {
   ClientKafka,
+  ClientProxy,
   Ctx,
   KafkaContext,
   MessagePattern,
-  Payload,
 } from '@nestjs/microservices';
 import { CreateTransactionInput } from '../dto/create-transaction.input';
+import { Consumer } from '@nestjs/microservices/external/kafka.interface';
 
 @Injectable()
-export class TransactionsService implements OnModuleInit {
+export class TransactionsService {
   constructor(
     @InjectRepository(Transaction)
     private transactionRepo: Repository<Transaction>,
 
     @Inject('TRANSACTIONSERVICE')
-    private readonly client: ClientKafka,
+    private readonly client: ClientProxy,
   ) {}
 
-  async onModuleInit() {
-    this.client.subscribeToResponseOf('transaction.validate');
-  }
+  // async onModuleInit() {
+  //   this.client.subscribeToResponseOf('transaction.validate');
+  //   await this.client.connect();
+  // }
 
   async creategraphql(
     transaction: CreateTransactionInput,
@@ -33,36 +35,25 @@ export class TransactionsService implements OnModuleInit {
     newTransaction.transactionStatus = 'pending';
     const response_save = await this.transactionRepo.save(newTransaction);
 
-    const transactionId = response_save.transactionId;
-    const transactionAmount = response_save.value;
-    console.log('transactionValidation', transactionId, transactionAmount);
+    console.log(
+      'transactionValidation',
+      response_save.transactionId,
+      response_save.value,
+    );
 
-    this.client.emit('transaction.validate', {
-      transactionId,
-      transactionAmount,
-    });
+    this.emitTransaction(response_save);
+
     return response_save;
   }
 
   async create(body: CreateTransactionInput) {
-    // TO DO FALTA
     const newTransaction = this.transactionRepo.create(body);
     newTransaction.transactionStatus = 'pending';
     const response_save = await this.transactionRepo.save(newTransaction);
 
-    const transactionId = response_save.transactionId;
-    const transactionAmount = response_save.value;
-    console.log('transactionValidation', transactionId, transactionAmount);
+    this.emitTransaction(response_save);
 
-    // console.log('1111transactionValidation', response.value);
-
-    this.client.emit('transaction.validate', {
-      transactionId,
-      transactionAmount,
-    });
-
-    // this.transactionValidation();
-    // return response_save;
+    return response_save;
   }
 
   async update(id: any, body: any) {
@@ -75,42 +66,13 @@ export class TransactionsService implements OnModuleInit {
     return this.transactionRepo.save(transaction);
   }
 
-  // @MessagePattern('transaction.validate.response')
-  // transactionValidation(
-  //   @Ctx()
-  //   context: KafkaContext,
-  // ) {
-  //   const response = context.getMessage();
-  //   console.log('transaction a secas en transactionValidation', response);
-  //   // const transactionId = transaction.transactionId;
-  //   // const transactionAmount = transaction.value;
-  //   // console.log('transactionValidation', transactionId, transactionAmount);
+  async emitTransaction(response_save: any) {
+    const transactionId = response_save.transactionId;
+    const transactionAmount = response_save.value;
 
-  //   console.log('1111transactionValidation', response.value);
-
-  //   // return this.client.emit('transaction.validate', {
-  //   //   transactionId,
-  //   //   transactionAmount,
-  //   // });
-  // }
-
-  // // TO DO FALTA
-  // @MessagePattern('transaction.validate')
-  // transactionValidate(
-  //   @Payload()
-  //   transaction: any,
-  //   @Ctx()
-  //   context: KafkaContext,
-  // ) {
-  //   const originalMessage = context.getMessage();
-  //   console.log(
-  //     '+++++++++++++++++++++++++++transaction service+++++++++++++++++++++++++++',
-  //   );
-  //   console.log('transaction service', transaction);
-  //   const response =
-  //     `Receiving a new message from topic: medium.rocks: ` +
-  //     JSON.stringify(originalMessage.value);
-  //   console.log(response);
-  //   return response;
-  // }
+    this.client.emit('transaction.validate', {
+      transactionId,
+      transactionAmount,
+    });
+  }
 }

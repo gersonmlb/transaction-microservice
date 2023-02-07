@@ -18,7 +18,7 @@ import { TransactionsResolver } from './resolvers/transactions.resolver';
             brokers: ['localhost:9092'],
           },
           consumer: {
-            groupId: 'kafka-transactions-test',
+            groupId: 'kafka-transactions-15',
           },
         },
       },
